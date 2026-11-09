@@ -31,6 +31,7 @@ function go(v){
   if(!VIEWS.includes(v)) v = 'inicio';
   $$('.view').forEach(s => { s.hidden = s.dataset.view !== v; });
   $$('.tab').forEach(t => { if(t.dataset.v === v) t.setAttribute('aria-current','page'); else t.removeAttribute('aria-current'); });
+  document.body.dataset.view = v;
   window.scrollTo(0,0);
 }
 window.addEventListener('hashchange', () => go(location.hash.slice(1)));
@@ -279,9 +280,34 @@ renderAll();
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
-let installEvt = null; const installBtn = $('#installBtn');
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; installBtn.hidden = false; });
-installBtn.addEventListener('click', async () => { if(!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch(_) {} installEvt = null; installBtn.hidden = true; });
-window.addEventListener('appinstalled', () => { installBtn.hidden = true; });
+/* Ventana flotante para instalar: solo en móviles, a los 8 s, y se puede cerrar (no vuelve en 30 días) */
+const inst = $('#install'), instGo = $('#installGo'), instSub = $('#installSub');
+const DISMISS_KEY = 'rha-install-dismissed', DISMISS_DAYS = 30;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isPhone = () => matchMedia('(pointer: coarse)').matches && Math.min(screen.width, screen.height) <= 600;
+const ua = navigator.userAgent;
+const isIOS = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const inApp = /Instagram|FBAN|FBAV|Snapchat|Line\//i.test(ua);
+const IOS_TIP = 'Toca <svg class="ios-share" viewBox="0 0 24 24" aria-label="Compartir"><path d="M12 3v12M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> y elige «Añadir a pantalla de inicio».';
+let installEvt = null, installReady = false;
+const dismissed = () => { try { const t = +localStorage.getItem(DISMISS_KEY); return !!t && Date.now() - t < DISMISS_DAYS * 864e5; } catch(_) { return false; } };
+const remember = () => { try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch(_) {} };
+function showInstall(){
+  if(!installReady || !inst.hidden || isStandalone() || dismissed() || !isPhone() || inApp) return;
+  if(installEvt){ instGo.hidden = false; instSub.textContent = 'Ábrela desde tu pantalla de inicio.'; }
+  else if(isIOS){ instGo.hidden = true; instSub.innerHTML = IOS_TIP; }
+  else return;
+  inst.hidden = false;
+}
+setTimeout(() => { installReady = true; showInstall(); }, 8000);
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; showInstall(); });
+instGo.addEventListener('click', async () => {
+  if(!installEvt) return;
+  inst.hidden = true;
+  try { installEvt.prompt(); const r = await installEvt.userChoice; if(!r || r.outcome !== 'accepted') remember(); } catch(_) {}
+  installEvt = null;
+});
+$('#installX').addEventListener('click', () => { inst.hidden = true; remember(); });
+window.addEventListener('appinstalled', () => { inst.hidden = true; });
 
 })();

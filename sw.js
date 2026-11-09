@@ -1,6 +1,6 @@
 /* Service worker: permite usar la web sin conexión y que se instale como app.
    Si cambias una foto manteniendo su nombre, sube el número de VERSION. */
-const VERSION = 'rha-v1';
+const VERSION = 'rha-v2';
 const CORE = [
   "./",
   "index.html",

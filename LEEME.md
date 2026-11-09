@@ -2,6 +2,7 @@
 
 Web estática (HTML + CSS + JavaScript, sin servidor ni base de datos). Se ve bien en móvil y ordenador,
 funciona sin conexión y se puede **instalar como app** desde el navegador del móvil ("Añadir a pantalla de inicio" / "Instalar app").
+En móviles aparece una ventanita flotante "Instala la app" a los 8 segundos; se puede cerrar y no vuelve a salir en 30 días. No aparece en ordenador ni dentro de la app ya instalada.
 
 ## Qué hay en la carpeta
 
